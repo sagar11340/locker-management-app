@@ -1,28 +1,33 @@
-
 from flask import Flask, render_template, request, redirect, url_for, make_response
-
 from pymongo import MongoClient, ReturnDocument
 from bson.objectid import ObjectId
 from datetime import datetime, date as _date, timedelta
 from dateutil.relativedelta import relativedelta
 import os
 from dotenv import load_dotenv
-import os
-from pymongo import MongoClient
 
-load_dotenv()
+load_dotenv()  # works locally, ignored on Railway (safe)
 
+app = Flask(__name__)
+
+# ---------- Environment Variables ----------
+MONGO_URI = os.environ.get("MONGO_URI")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+if not MONGO_URI:
+    raise RuntimeError("MONGO_URI is not set")
+
+app.secret_key = SECRET_KEY or "default-secret"
 
 # ---------- MongoDB connection ----------
-MONGO_URI = os.getenv("MONGO_URI")
-SECRET_KEY = os.getenv("SECRET_KEY")
 client = MongoClient(MONGO_URI)
-db = client.get_database("rkm_locker_db")
+db = client["rkm_locker_db"]
 
-# ✅ define collections (VERY IMPORTANT)
-lockers = db["lockers"]
-payments = db["payments"]
-counters = db["counters"]
+# ---------- Collections ----------
+lockers = db.lockers
+payments = db.payments
+counters = db.counters
+
 
 
 
