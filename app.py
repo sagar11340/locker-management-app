@@ -438,37 +438,53 @@ def monthly_report():
 
 @app.route('/student_check', methods=['GET', 'POST'])
 def student_check():
-    result = None
+    results = []
     error = None
+
     if request.method == 'POST':
         membership_id = request.form.get('membership_id', '').strip()
+
         if not membership_id:
             error = "Please enter your Membership ID."
         else:
-            doc = lockers.find_one({"membership_id": {"$regex": f'^{membership_id}$', "$options": "i"}}, sort=[("created_at", -1)])
-            if not doc:
-                error = "No record found for this Membership ID. Please check and try again."
+            docs = list(
+                lockers.find(
+                    {"membership_id": {"$regex": f'^{membership_id}$', "$options": "i"}}
+                ).sort("created_at", -1)
+            )
+
+            if not docs:
+                error = "No record found for this Membership ID."
             else:
-                sd = doc.get('start_date')
-                ed = doc.get('end_date')
-                now_date = now = datetime.utcnow().date()
-                ed_date = ed.date() if isinstance(ed, datetime) else (ed if ed else None)
-                days_left = (ed_date - now_date).days if ed_date else None
-                expired = days_left is not None and days_left < 0
-                result = {
-                    "full_name": doc.get('full_name'),
-                    "membership_id": doc.get('membership_id'),
-                    "locker_no": doc.get('locker_no'),
-                    "mobile": doc.get('mobile'),
-                    "gender": doc.get('gender'),
-                    "start_date": sd,
-                    "end_date": ed,
-                    "end_date_str": ed_date.strftime("%d/%m/%Y") if ed_date else "—",
-                    "days_left": days_left,
-                    "expired": expired,
-                    "status": doc.get('status', 'active')
-                }
-    return render_template('student_check.html', result=result, error=error)
+                today = datetime.utcnow().date()
+
+                for doc in docs:
+                    sd = doc.get('start_date')
+                    ed = doc.get('end_date')
+
+                    ed_date = ed.date() if isinstance(ed, datetime) else None
+                    days_left = (ed_date - today).days if ed_date else None
+
+                    results.append({
+                        "full_name": doc.get('full_name'),
+                        "membership_id": doc.get('membership_id'),
+                        "locker_no": doc.get('locker_no'),
+                        "mobile": doc.get('mobile'),
+                        "gender": doc.get('gender'),
+                        "start_date": sd,
+                        "end_date": ed,
+                        "end_date_str": ed_date.strftime("%d/%m/%Y") if ed_date else "—",
+                        "days_left": days_left,
+                        "expired": days_left is not None and days_left < 0,
+                        "status": doc.get('status', 'active')
+                    })
+
+    return render_template(
+        'student_check.html',
+        results=results,
+        error=error
+    )
+
 from datetime import datetime
 from bson.objectid import ObjectId
 from flask import request, redirect, url_for, render_template

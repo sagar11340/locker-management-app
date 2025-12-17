@@ -1,210 +1,166 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Locker Expiry Check – RKM New Delhi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- Bootstrap (mobile friendly) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-{% block content %}
-<style>
-/* Full-screen header with responsive landscape image */
-.hero {
-  position: relative;
-  width: 100%;
-  height: 40vh;
-  min-height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #000;
-}
-.hero img.bg {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%,-50%);
-  width: 100%;
-  height: auto;
-  min-height: 100%;
-  object-fit: cover;
-  filter: saturate(1) contrast(1);
-  opacity: 0.95;
-}
-.hero .overlay {
-  position: relative;
-  z-index: 2;
-  color: #fff;
-  text-align: left;
-  width: 100%;
-  padding: 18px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35));
-}
-.heading {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-}
-.heading h2 { margin:0; font-size:1.25rem; font-weight:700; }
-.heading small { display:block; font-size:0.9rem; color:#f0f0f0; }
+  <style>
+    body {
+      background: #f6f7fb;
+    }
+    .card {
+      border-radius: 12px;
+    }
+    .rule-box {
+      background: #fff8e8;
+      border-left: 5px solid #ffc107;
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 18px;
+    }
+    .rule-box h4 {
+      margin-top: 0;
+    }
+    footer {
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
 
-/* Main container */
-.check-card {
-  max-width:920px;
-  margin: 18px auto;
-  background: #fff;
-  padding: 14px;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-}
+<body>
 
-/* Form */
-.form-inline { display:flex; gap:8px; flex-wrap:wrap; }
-.form-inline input[type="text"] { flex:1 1 220px; min-width:160px; }
-.form-inline button { flex: 0 0 auto; }
+<div class="container py-4">
+<!-- Header with Logo -->
+<div class="text-center mb-4">
+  <img
+    src="{{ url_for('static', filename='img/rkm_logo.png') }}"
+    alt="Ramakrishna Mission Logo"
+    style="max-height:90px;"
+    class="mb-2 img-fluid"
+  >
 
-/* Result box */
-.result {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 6px;
-  background: #f8f9fb;
-}
-.result .row { margin-bottom:6px; }
-
-/* Rules */
-.rules {
-  margin-top: 14px;
-  padding: 12px;
-  border-radius:6px;
-  background: #fff8e8;
-  border-left: 4px solid #ffc107;
-}
-.rules h4 { margin-top:0; }
-
-/* Responsive tweaks */
-@media (max-width:600px) {
-  .hero { height: 36vh; }
-  .heading h2 { font-size: 1.05rem; }
-  .check-card { margin: 12px; padding: 10px; }
-}
-
-/* Print: only print the result block */
-@media print {
-  body * { visibility: hidden; }
-  #printable, #printable * { visibility: visible; }
-  #printable { position: absolute; left: 0; top: 0; width: 100%; }
-  @page { size: A4; margin: 12mm; }
-}
-</style>
-
-<!-- Hero with full-width Swami Vivekananda landscape photo -->
-<div class="hero">
-  <img class="bg"
-     src="{{ url_for('static', filename='img/swami_landscape.jpg') }}"
-     alt="Swami Vivekananda"
-     onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/rkm_logo.png') }}'; this.style.objectFit='contain'; this.style.background='#222';">
-
-  <div class="overlay">
-    <div class="heading">
-      <div>
-        <h2>Ramakrishna Mission New Delhi</h2>
-        <small>General Library &amp; Swami Vivekananda Reading Room</small>
-      </div>
-      <div style="text-align:right;">
-        <small>Locker Expiry Check</small>
-      </div>
-    </div>
+  <h4 class="fw-bold mb-0">Ramakrishna Mission, New Delhi</h4>
+  <div class="text-muted small">
+    General Library & Swami Vivekananda Reading Room
   </div>
+
+  <span class="badge bg-primary mt-2">
+    Locker Expiry Check
+  </span>
 </div>
 
-<div class="check-card container">
-  <form method="post" class="form-inline" id="checkForm" novalidate>
-    <input type="text" name="membership_id" placeholder="Enter Membership ID" class="form-control" required aria-label="Membership ID">
-    <button class="btn btn-primary" type="submit">Check Expiry</button>
-    <button type="button" id="clearBtn" class="btn btn-outline-secondary">Clear</button>
-  </form>
+  
 
-  {% if error %}
-  <div class="alert alert-warning mt-3">{{ error }}</div>
-  {% endif %}
+  <!-- Form -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        <label class="form-label fw-semibold">Membership ID</label>
+        <input type="text" name="membership_id" class="form-control mb-3"
+               placeholder="Enter your Membership ID" required>
+        <button class="btn btn-primary w-100">Check Locker Status</button>
+      </form>
 
-  {% if result %}
-  <div id="printable" class="result">
-    <div class="row">
-      <div class="col-8"><strong>Name:</strong> {{ result.full_name or '—' }}</div>
-      <div class="col-4 text-end"><strong>Locker No:</strong> {{ result.locker_no or '—' }}</div>
-    </div>
-    <div class="row">
-      <div class="col-6"><strong>Membership ID:</strong> {{ result.membership_id }}</div>
-      <div class="col-6 text-end"><strong>Status:</strong>
-        {% if result.status == 'cancelled' %}
-          <span class="badge bg-danger">Cancelled</span>
-        {% elif result.expired %}
-          <span class="badge bg-warning">Expired</span>
-        {% else %}
-          <span class="badge bg-success">Active</span>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-6"><strong>Expiry Date:</strong> {{ result.end_date_str }}</div>
-      <div class="col-6 text-end">
-        <strong>Days left:</strong>
-        {% if result.days_left is not none %}
-          {% if result.days_left < 0 %}
-            {{ (-result.days_left) }} day(s) past due
-          {% else %}
-            {{ result.days_left }} day(s)
-          {% endif %}
-        {% else %}
-          —
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-12 mt-2">
-        <small>Note: If your locker is expired and you wish to renew, please contact the library counter.</small>
-      </div>
-    </div>
-
-    <div class="mt-3 text-end">
-      <button class="btn btn-sm btn-outline-secondary" onclick="window.print(); return false;">Print</button>
+      {% if error %}
+        <div class="alert alert-warning mt-3 text-center">
+          {{ error }}
+        </div>
+      {% endif %}
     </div>
   </div>
-  {% else %}
-  <div class="mt-3">
-    <small>Enter your membership ID above and press <strong>Check Expiry</strong> to see your locker details and due date.</small>
+
+  <!-- Results -->
+  {% if results %}
+  <div class="card shadow-sm mt-4">
+    <div class="card-body">
+      <h6 class="fw-bold mb-3">
+        Member: {{ results[0].full_name }} ({{ results[0].membership_id }})
+      </h6>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Locker No</th>
+              <th>Expiry</th>
+              <th>Days Left</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in results %}
+            <tr class="{% if r.expired %}table-danger{% endif %}">
+              <td>{{ r.locker_no }}</td>
+              <td>{{ r.end_date_str }}</td>
+              <td>
+                {% if r.days_left is not none %}
+                  {% if r.days_left < 0 %}
+                    {{ (-r.days_left) }} overdue
+                  {% else %}
+                    {{ r.days_left }}
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                {% if r.expired %}
+                  <span class="badge bg-danger">Expired</span>
+                {% else %}
+                  <span class="badge bg-success">Active</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-muted small mt-2">
+        If your locker is expired, please contact the library counter for renewal.
+      </div>
+    </div>
   </div>
   {% endif %}
 
-  <div class="rules">
+  <!-- Rules -->
+  <div class="rule-box">
     <h4>Library & Reading Room Rules</h4>
     <ol>
       <li>Keep silence in the reading room; mobile phones on silent.</li>
-      <li>Maintain cleanliness and do not bring food/drink inside.</li>
-      <li>Return books on time. Locker renewals and fines apply as per policy.</li>
-      <li>Report key loss immediately. Key missing fine: Rs 150.</li>
-      <li>Respect fellow readers and staff — follow instructions of the librarian.</li>
-      <li>Locker holders must show valid membership ID for any transaction.</li>
+      <li>Maintain cleanliness and do not bring food or drinks.</li>
+      <li>Return books on time. Locker renewals and fines apply.</li>
+      <li>Report key loss immediately. Key missing fine: ₹150.</li>
+      <li>Follow instructions of the librarian and staff.</li>
+      <li>Valid membership ID is required for locker transactions.</li>
     </ol>
   </div>
 
-  <div class="rules">
-    <h4>LOCKERS: Terms and Conditions</h4>
+  <div class="rule-box">
+    <h4>LOCKERS – Terms & Conditions</h4>
     <ol>
-      <b>A locker facility has been started at the Vivekananda Reading Room for the convenience of members. Members interested in applying for the same may contact the staff. Kindly review the following Terms & Conditions:</b>
-      <li>	The facility has been made available at a fee of INR 200.00 per month (Rupees Two Hundred Per Month)</li>
-      <li>	Fee once paid is NOT refundable even in case of cancellation or surrender of locker</li>
-      <li>	ONE key will be provided which the member may keep till withdrawal of facility</li>
-      <li>	In case of loss of key, a fine of INR 150.00 (Rupees One Hundred Fifty Only) shall be charged and a new key shall be issued</li>
-      <li>	In case a member forgets to carry the key to the Reading Room on any day, the staff shall  NOT open the locker for him/her. Any such request made by any member shall be strictly denied</li>
-      <li>	Locker shall not be used by any member to store eatables, weapons or other such illegal items. If any member is found storing any such item in the locker, the facility shall be cancelled immediately for that member</li>
-      <li>	The In Charge may ask any member to open the locker at any time to check the contents of the locker</li>
-      <li>	If members are found indulging in sharing the same locker or making other such arrangements, the locker facility for those members shall be cancelled immediately and Reading Room membership shall be suspended for at least two months Locker fee not paid on time will invite a fine of INR 10.00 per day (Rupees Ten per day)</li>
-      <li>	Members are informed that they are storing their possessions in the lockers at their own risk. The ashram or staff shall not be responsible for any loss or theft</li>
+      <li>Locker fee: ₹200 per month (non-refundable).</li>
+      <li>Only ONE key will be issued per locker.</li>
+      <li>Loss of key attracts a fine of ₹150.</li>
+      <li>Locker will not be opened if key is forgotten.</li>
+      <li>No food, weapons, or illegal items allowed.</li>
+      <li>Locker contents may be checked by the In-Charge.</li>
+      <li>Sharing lockers is strictly prohibited.</li>
+      <li>Late fee: ₹10 per day if locker fee is unpaid.</li>
+      <li>Use lockers at your own risk. The Ashram is not responsible for loss.</li>
     </ol>
   </div>
+
+  <footer class="text-center mt-4">
+    © {{ datetime.utcnow().year }} Ramakrishna Mission, New Delhi
+  </footer>
 
 </div>
 
-{% endblock %}
+</body>
+</html>
