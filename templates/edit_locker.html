@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  <h3>Edit Locker</h3>
+  <form method="post">
+    <div class="mb-2">
+      <label class="form-label">Full name</label>
+      <input class="form-control" name="full_name" value="{{ doc.full_name or '' }}">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">Membership ID</label>
+      <input class="form-control" name="membership_id" value="{{ doc.membership_id or '' }}">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">Locker No</label>
+      <input class="form-control" name="locker_no" value="{{ doc.locker_no or '' }}">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">Mobile (optional)</label>
+      <input class="form-control" name="mobile" value="{{ doc.mobile or '' }}">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">Gender</label>
+      <select name="gender" class="form-select">
+        <option value="">--</option>
+        <option value="Male" {% if doc.gender == 'Male' %}selected{% endif %}>Male</option>
+        <option value="Female" {% if doc.gender == 'Female' %}selected{% endif %}>Female</option>
+      </select>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">Start Date</label>
+      <input class="form-control" type="date" name="start_date"
+             value="{{ (doc.start_date|dateformat('%Y-%m-%d')) if doc.start_date else '' }}">
+      <small class="form-text text-muted">If you change start date, end date will be recalculated as +1 month.</small>
+    </div>
+
+    <button class="btn btn-primary">Save</button>
+    <a class="btn btn-secondary" href="{{ url_for('view_lockers') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

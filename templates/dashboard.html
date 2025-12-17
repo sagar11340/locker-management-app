@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+/* small tweaks so expiry/months look neat in locker square */
+.l-expiry, .l-months, .l-days { font-size: 0.85rem; color: #444; margin-top: 6px; }
+.l-name { font-weight: 600; margin-bottom: 4px; }
+.l-id { font-size: 0.85rem; color: #666; margin-bottom: 6px; }
+.l-status { margin-bottom: 6px; }
+.l-available { color: #777; font-weight: 600; }
+.lockers-legend { margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>RKM DELHI — Locker Dashboard (54)</h3>
+    <div>
+      <a class="btn btn-sm btn-primary" href="{{ url_for('add_locker') }}">Add Locker</a>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for('view_lockers') }}">List View</a>
+      <a class="btn btn-sm btn-info" href="{{ url_for('monthly_report') }}">Reports</a>
+       <a class="btn btn-sm btn-success" href="{{ url_for('payment_history') }}">
+        
+    Payment History
+  </a>
+    </div>
+  </div>
+
+  <div class="legend mb-2">
+    <span class="legend-item"><span class="sw active"></span>Active</span>
+    <span class="legend-item"><span class="sw expiring"></span>Expiring ≤25d</span>
+    <span class="legend-item"><span class="sw cancelled"></span>Cancelled</span>
+    <span class="legend-item"><span class="sw vacated"></span>Available</span>
+  </div>
+
+  <div class="locker-grid">
+    {% for row in grid %}
+      {% for cell in row %}
+        {% set ln = cell.num %}
+        {% set doc = cell.doc %}
+
+        {# treat docs with status 'available' as free lockers #}
+        {% set is_available = (not doc) or (doc.status == 'available') or (not doc.membership_id) %}
+
+        <div class="locker-square
+                    {% if is_available %} available
+                    {% else %}
+                      {% if doc.status == 'active' %} taken
+                      {% elif doc.status == 'cancelled' %} cancelled
+                      {% elif doc.status == 'vacated' %} vacated
+                      {% else %} taken
+                      {% endif %}
+                    {% endif %}"
+             data-locker="{{ ln }}"
+             data-doc='{{ (doc if not is_available else None) | tojson | safe }}'
+             onclick="openLockerModal(this)">
+          <div class="locker-no">{{ ln }}</div>
+
+          {% if not is_available %}
+            <div class="locker-body">
+              <div class="l-name">{{ (doc.full_name or '-') | truncate(18) }}</div>
+              <div class="l-id">{{ doc.membership_id or '-' }}</div>
+
+              <div class="l-status">
+                {% if doc.status == 'active' %}
+                  <span class="badge bg-success">Active</span>
+                {% elif doc.status == 'cancelled' %}
+                  <span class="badge bg-warning text-dark">Cancelled</span>
+                {% elif doc.status == 'vacated' %}
+                  <span class="badge bg-secondary text-white">Vacant</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">{{ doc.status }}</span>
+                {% endif %}
+              </div>
+
+              {# expiry date (if present) #}
+              {% if doc.end_date %}
+                <div class="l-expiry">
+                  <small>Expiry: {{ doc.end_date | dateformat("%d/%m/%Y") }}</small>
+                </div>
+              {% endif %}
+
+              {# months paid: prefer doc.last_paid_months, fallback to cell.months #}
+              {% if doc.last_paid_months %}
+                <div class="l-months"><small>Paid: {{ doc.last_paid_months }}m</small></div>
+              {% elif cell.months is defined and cell.months %}
+                <div class="l-months"><small>Paid: {{ cell.months }}m</small></div>
+              {% endif %}
+
+              {% if cell.days_left is not none %}
+                <div class="l-days">
+                  {% if cell.days_left < 0 %}
+                    <small class="text-danger">Expired {{ -cell.days_left }}d</small>
+                  {% else %}
+                    <small>{{ cell.days_left }}d</small>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="locker-body">
+              <div class="l-available">Available</div>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="lockerModal" tabindex="-1" aria-labelledby="lockerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="lockerModalLabel">Locker</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="lockerDetails"></div>
+      </div>
+      <div class="modal-footer">
+        <a id="editBtn" class="btn btn-primary" href="#" style="display:none">Edit</a>
+        <a id="payBtn" class="btn btn-success" href="#" style="display:none">Make Payment</a>
+        <a id="addBtn" class="btn btn-outline-secondary" href="{{ url_for('add_locker') }}">Add New</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openLockerModal(el) {
+  const json = el.getAttribute('data-doc');
+  const lockerNo = el.getAttribute('data-locker');
+  const modalEl = document.getElementById('lockerModal');
+  const modal = new bootstrap.Modal(modalEl);
+  const details = document.getElementById('lockerDetails');
+  const editBtn = document.getElementById('editBtn');
+  const payBtn = document.getElementById('payBtn');
+
+  // hide buttons by default
+  editBtn.style.display = 'none';
+  payBtn.style.display = 'none';
+
+  // if no doc in data-doc => locker is available
+  if (!json || json === "null") {
+    details.innerHTML = `<p><strong>Locker ${lockerNo}</strong> — <span class="text-success">Available</span></p>
+                         <p>No member assigned.<br>
+                         <a href="{{ url_for('add_locker') }}">Click here to assign this locker to a student.</a></p>`;
+    modal.show();
+    return;
+  }
+
+  // parse JSON safely
+  let doc;
+  try {
+    doc = JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse locker JSON:", e, json);
+    details.innerHTML = `<p>Error reading locker details.</p>`;
+    modal.show();
+    return;
+  }
+
+  // if backend sends a doc but it's already available / no membership, treat as free
+  if (!doc || doc.status === 'available' || !doc.membership_id) {
+    details.innerHTML = `<p><strong>Locker ${lockerNo}</strong> — <span class="text-success">Available</span></p>
+                         <p>No member assigned.<br>
+                         <a href="{{ url_for('add_locker') }}">Click here to assign this locker to a student.</a></p>`;
+    modal.show();
+    return;
+  }
+
+  // compute id string: some docs from server might have { _id: { "$oid": "..." } } or _id: "..."
+  let id = null;
+  if (doc._id && typeof doc._id === 'object' && ('$oid' in doc._id)) {
+    id = doc._id['$oid'];
+  } else if (doc._id && typeof doc._id === 'string') {
+    id = doc._id;
+  } else if (doc._id && doc._id['$oid']) {
+    id = doc._id['$oid'];
+  }
+
+  let html = `<p><strong>Locker ${lockerNo}</strong></p>`;
+  html += `<p><b>Name:</b> ${doc.full_name || '-'}<br>`;
+  html += `<b>Membership ID:</b> ${doc.membership_id || '-'}<br>`;
+  html += `<b>Mobile:</b> ${doc.mobile || '-'}<br>`;
+  html += `<b>Status:</b> ${doc.status || '-' }<br>`;
+  if (doc.end_date) {
+    // client-friendly display: try new Date parse, otherwise show raw
+    try {
+      const d = new Date(doc.end_date);
+      html += `<b>Expiry:</b> ${isNaN(d.getTime()) ? doc.end_date : d.toLocaleDateString()}<br>`;
+    } catch(e) {
+      html += `<b>Expiry:</b> ${doc.end_date}<br>`;
+    }
+  }
+  if (doc.last_paid_months) {
+    html += `<b>Last paid months:</b> ${doc.last_paid_months} months<br>`;
+  }
+  html += `</p>`;
+  details.innerHTML = html;
+
+  // show buttons and set links if id available
+  if (id) {
+    editBtn.style.display = 'inline-block';
+    payBtn.style.display = 'inline-block';
+    editBtn.href = `/edit/${id}`;
+    payBtn.href = `/payment/${id}`;
+  } else {
+    editBtn.style.display = 'none';
+    payBtn.style.display = 'none';
+  }
+
+  modal.show();
+}
+</script>
+{% endblock %}

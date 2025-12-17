@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Add Locker / Member</h3>
+
+<form method="post">
+
+  <div class="mb-3">
+    <label>Start Date</label>
+    <input type="date" name="start_date" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label>Full Name</label>
+    <input type="text" name="full_name" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label>Membership ID</label>
+    <input type="text" name="membership_id" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label>Locker Number</label>
+    <input type="text" name="locker_no" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label>Mobile Number</label>
+    <input type="text" name="mobile" class="form-control">
+  </div>
+
+  <div class="mb-3">
+    <label>Gender</label>
+    <select name="gender" class="form-select">
+      <option value="">Select</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+
+</form>
+
+<hr>
+
+<p class="text-center text-muted">
+  © Ramakrishna Mission – Computer Training Centre
+</p>
+
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Print-specific CSS: put here so it's loaded with this page -->
+<style>
+@media print {
+  /* hide the report header (title + date form) */
+  #report-header { display: none !important; }
+
+  /* hide site header / navbar / sidebar if present */
+  .navbar, .topbar, .sidebar , .nav  {
+    display: none !important;
+  }
+
+  /* hide all on-screen buttons including Receipt links */
+  .btn, .btn-outline-primary, .btn-outline-secondary, a.btn {
+    display: none !important;
+  }
+
+  /* hide any action column specifically */
+  .action-column, th.action, td.action {
+    display: none !important;
+  }
+
+  /* ensure table uses full printable width and avoids overflow */
+  .table, .table-responsive, table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    overflow: visible !important;
+  }
+
+  /* avoid large page margins from parent styles */
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* optional: reduce font-size slightly for printing */
+  body { font-size: 12px !important; }
+}
+</style>
+
+<div class="container py-3">
+  
+  <h3>Monthly Report</h3>
+
+  <form method="post" class="row g-2 align-items-end my-3">
+    <div class="col-auto">
+      <label class="form-label">From</label>
+      <input type="date" name="from_date" class="form-control" value="{{ (from_date|dateformat('%Y-%m-%d')) if from_date is defined and from_date else '' }}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label">To</label>
+      <input type="date" name="to_date" class="form-control" value="{{ (to_date|dateformat('%Y-%m-%d')) if to_date is defined and to_date else '' }}">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">Generate</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('monthly_report') }}">Reset</a>
+    </div>
+  </form>
+
+  {% if pays is not none and pays|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>Sl No</th>
+            <th>Receipt No</th>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Membership ID</th>
+            <th>Locker No</th>
+            <th>Monthly Fee</th>
+            <th>Late Fine</th>
+            <th>Key Missing Fine</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in pays %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ payment.receipt_no or '-' }}</td>
+            <td>{{ (payment.payment_date|dateformat) if payment.payment_date is defined else '-' }}</td>
+            <td>{{ payment.full_name or '-' }}</td>
+            <td>{{ payment.membership_id or '-' }}</td>
+            <td>{{ payment.locker_no or '-' }}</td>
+            <td>{{ payment.monthly_fee or 0 }}</td>
+            <td>{{ payment.late_fine or 0 }}</td>
+            <td>{{ payment.key_missing_fine or 0 }}</td>
+            <td>{{ payment.total or 0 }}</td>
+            <td>
+              {% if payment.receipt_no is defined %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('view_receipt', receipt_no=payment.receipt_no) }}" target="_blank">Receipt</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="9" class="text-end">Grand Total</th>
+            <th>{{ total_sum or (pays|map(attribute='total')|sum if pays else 0) }}</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Optional: print button (browser print) -->
+    <div class="mt-3">
+      <button class="btn btn-secondary" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+
+  {% elif pays is not none %}
+    <div class="alert alert-info">No payments found for selected range.</div>
+  {% else %}
+    <div class="alert alert-secondary">Select a date range and click Generate to view the report.</div>
+  {% endif %}
+</div>
+{% endblock %}

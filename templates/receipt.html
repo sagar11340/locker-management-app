@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  /* A4 print friendly styling */
+  @media print {
+    @page { size: A4; margin: 8mm; }
+  }
+  .receipt {
+    width: 100%;
+    max-width: 780px;
+    margin: 8mm auto;
+    border: 1px solid #e3e3e3;
+    padding: 18px;
+    background: white;
+  }
+  .small-muted { color:#666; font-size:0.9rem; }
+  .particulars td { vertical-align: middle; }
+</style>
+
+<div class="receipt">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <h5 class="mb-0">Ramakrishna Mission</h5>
+      <div class="small-muted">RKM DELHI - Reading Room &amp; General Library</div>
+    </div>
+    <div><img src="{{ url_for('static', filename='img/rkm_logo.png') }}" alt="logo" style="height:60px;"></div>
+  </div>
+
+  <hr>
+
+  <div class="row">
+    <div class="col-6">
+      <p class="mb-1"><strong>Student:</strong> {{ payment.full_name or '-' }}</p>
+      <p class="mb-1"><strong>Membership ID:</strong> {{ payment.membership_id or '-' }}</p>
+      <p class="mb-1"><strong>Locker No:</strong> {{ payment.locker_no or '-' }}</p>
+    </div>
+    <div class="col-6 text-end">
+      <p class="mb-1"><strong>Receipt No:</strong> {{ payment.receipt_no }}</p>
+      <p class="mb-1"><strong>Payment Date:</strong>
+        {% if receipt_date %}{{ receipt_date.strftime("%d/%m/%Y") }}{% else %}-{% endif %}
+      </p>
+      {% if payment.created_at %}
+        <p class="mb-0 small-muted">Recorded: {{ payment.created_at | dateformat("%d/%m/%Y %H:%M") }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# compute friendly values, prefer monthly_fee_used, fallback to monthly_fee #}
+  {% set monthly_fee = (payment.monthly_fee_used if payment.monthly_fee_used is defined else (payment.monthly_fee if payment.monthly_fee is defined else 0)) %}
+  {% set months = (payment.months if payment.months is defined else 1) %}
+  {% set months_subtotal = (monthly_fee * months) | int %}
+  {% set late_days = (payment.late_days_charged if payment.late_days_charged is defined else (payment.late_days_actual if payment.late_days_actual is defined else 0)) %}
+  {% set late_fine = (payment.late_fine if payment.late_fine is defined else 0) %}
+  {% set key_fine = (payment.key_missing_fine if payment.key_missing_fine is defined else 0) %}
+
+  <table class="table mt-3 table-sm particulars">
+    <thead>
+      <tr>
+        <th>Particulars</th>
+        <th class="text-end">Amount (Rs)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>Monthly fee (per month)</strong><br>
+          <span class="small-muted">This is the fee applied for each month of the locker.</span>
+        </td>
+        <td class="text-end">{{ monthly_fee | int }}</td>
+      </tr>
+
+      <tr>
+        <td>
+          <strong>Months paid</strong><br>
+          <span class="small-muted">Number of months covered by this payment.</span>
+        </td>
+        <td class="text-end">{{ months }}</td>
+      </tr>
+
+      <tr>
+        <td>
+          <strong>Subtotal for months ({{ monthly_fee | int }} × {{ months }} )</strong><br>
+          <span class="small-muted">Monthly fee multiplied by months paid.</span>
+        </td>
+        <td class="text-end">{{ months_subtotal }}</td>
+      </tr>
+
+      <tr>
+        <td>
+          <strong>Late fine</strong>
+          {% if late_days %}
+            <br><span class="small-muted">Late days charged: {{ late_days }} (₹{{ (late_fine // late_days) if late_days and late_fine else 10 }} per day)</span>
+          {% else %}
+            <br><span class="small-muted">No late fine charged for this payment.</span>
+          {% endif %}
+        </td>
+        <td class="text-end">{{ late_fine | int }}</td>
+      </tr>
+
+      <tr>
+        <td>
+          <strong>Key missing fine</strong>
+          <br><span class="small-muted">Applied when the locker key is missing.</span>
+        </td>
+        <td class="text-end">{{ key_fine | int }}</td>
+      </tr>
+    </tbody>
+
+    <tfoot>
+      <tr>
+        <th>Total</th>
+        <th class="text-end">{{ payment.total | int }}</th>
+      </tr>
+    </tfoot>
+  </table>
+
+  <hr>
+
+  <div class="row">
+    <div class="col-6">
+      <p class="mb-1"><strong>Start Date (coverage begins):</strong>
+        {% if payment.start_date %}{{ payment.start_date | dateformat("%d/%m/%Y") }}{% else %}-{% endif %}
+      </p>
+      <p class="mb-1"><strong>Expiry / End Date:</strong>
+        {% if payment.end_date %}{{ payment.end_date | dateformat("%d/%m/%Y") }}{% else %}-{% endif %}
+      </p>
+      <p class="small-muted mb-0">
+        <em>Explanation:</em> The start date is when the paid period begins. The expiry date is when the paid coverage ends.
+        Renewal payments extend the expiry forward by the number of months paid.
+      </p>
+    </div>
+
+    <div class="col-6 text-end">
+      <p class="mb-1"><strong>Recorded by:</strong> {{ payment.recorded_by if payment.recorded_by is defined else "-" }}</p>
+      <p class="mb-1"><strong>Action:</strong>
+        {% if payment.action == 'cancel' %}
+          Cancelled (no renewal)
+        {% elif payment.action == 'return' %}
+          Vacated / returned
+        {% else %}
+          Renewal / Payment
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if payment.action == 'cancel' %}
+    <div class="alert alert-warning mt-3">This payment cancelled the locker and cleared the assignment. Locker is now available.</div>
+  {% elif payment.action == 'return' %}
+    <div class="alert alert-info mt-3">This payment recorded as a return/vacation of the locker.</div>
+  {% endif %}
+
+  <div class="mt-4 d-flex justify-content-between">
+    <div>Receiver Signature</div>
+    <div>Student Signature</div>
+  </div>
+
+  <div class="mt-3 d-flex gap-2">
+    <a class="btn btn-primary" onclick="window.print()">Print / Save as PDF</a>
+    <a class="btn btn-secondary" href="{{ url_for('view_lockers') }}">Back</a>
+  </div>
+</div>
+{% endblock %}

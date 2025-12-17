@@ -1,0 +1,116 @@
+body {
+  background-color: #f8f9fa;
+  font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+.container h3 {
+  font-weight: 600;
+  color: #222;
+}
+
+/* Legend Styling */
+.legend {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-item .sw {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.sw.active { background-color: #28a745; }
+.sw.expiring { background-color: #ffc107; }
+.sw.cancelled { background-color: #dc3545; }
+.sw.vacated { background-color: #6c757d; }
+
+/* Locker Grid Layout */
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Locker Square Boxes */
+.locker-square {
+  background: white;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid transparent;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.locker-square:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Locker Colors Based on Status */
+.locker-square.available { border-color: #6c757d; }
+.locker-square.taken { border-color: #28a745; background: #e7f8ec; }
+.locker-square.cancelled { border-color: #ffc107; background: #fff6e0; }
+.locker-square.vacated { border-color: #adb5bd; background: #f2f3f4; }
+
+/* Locker Number */
+.locker-no {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+/* Locker Info Text */
+.locker-body {
+  font-size: 13px;
+}
+
+.l-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.l-id {
+  color: #555;
+}
+
+.l-days {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #666;
+}
+
+.l-available {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* Modal Styling */
+.modal-content {
+  border-radius: 12px;
+}
+
+.modal-header {
+  background-color: #007bff;
+  color: white;
+  border-bottom: none;
+}
+
+.modal-footer {
+  border-top: none;
+}
